@@ -1,0 +1,293 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── CSS Variables ──────────────────────────────────────────────────────── */
+
+:root {
+  --brand-50:  #f5f3ff;
+  --brand-100: #ede9fe;
+  --brand-200: #ddd6fe;
+  --brand-400: #a78bfa;
+  --brand-600: #7c3aed;
+  --brand-700: #6d28d9;
+  --cream-bg:  #fffbf5;
+  --cream-card: #fef7ec;
+  --warm-border: #e7e5e4;
+  --warm-text:   #292524;
+  --warm-muted:  #78716c;
+  --shadow-warm: 0 4px 6px -1px rgba(120,113,108,.1), 0 2px 4px -2px rgba(120,113,108,.08);
+  --shadow-brand: 0 4px 14px 0 rgba(139,92,246,.25);
+}
+
+/* ── Base ───────────────────────────────────────────────────────────────── */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    background-color: var(--cream-bg);
+    color: var(--warm-text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+  }
+
+  ::selection {
+    background-color: #ddd6fe;
+    color: #4c1d95;
+  }
+}
+
+/* ── Components ─────────────────────────────────────────────────────────── */
+
+@layer components {
+
+  /* ── Buttons ── */
+
+  .btn {
+    @apply inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl font-semibold text-sm
+           transition-all duration-200 cursor-pointer select-none
+           focus:outline-none focus:ring-2 focus:ring-offset-2
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn text-white active:scale-[0.98] focus:ring-violet-400;
+    background: var(--brand-600);
+    box-shadow: var(--shadow-brand);
+  }
+  .btn-primary:hover { background: var(--brand-700); }
+
+  .btn-secondary {
+    @apply btn bg-stone-100 text-stone-700 hover:bg-stone-200 border border-stone-200
+           focus:ring-stone-300 active:scale-[0.98];
+  }
+
+  .btn-trust {
+    @apply btn bg-emerald-600 text-white hover:bg-emerald-700
+           focus:ring-emerald-400 active:scale-[0.98];
+  }
+
+  .btn-outline {
+    @apply btn bg-transparent border-2 border-violet-400 text-violet-600
+           hover:bg-violet-50 focus:ring-violet-300 active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-stone-600 hover:bg-stone-100 focus:ring-stone-300;
+  }
+
+  .btn-lg {
+    @apply px-8 py-4 text-base rounded-2xl;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs rounded-xl;
+  }
+
+  /* ── Cards ── */
+
+  .card {
+    @apply bg-white rounded-3xl overflow-hidden;
+    border: 1px solid var(--warm-border);
+    box-shadow: var(--shadow-warm);
+  }
+
+  .card-warm {
+    @apply rounded-3xl;
+    background-color: var(--cream-card);
+    border: 1px solid #fbe8b8;
+    box-shadow: 0 1px 3px 0 rgba(120,113,108,.08);
+  }
+
+  .card-hover {
+    @apply card transition-all duration-300 cursor-pointer;
+  }
+  .card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(120,113,108,.12), 0 8px 10px -6px rgba(120,113,108,.08);
+  }
+
+  .card-glass {
+    @apply rounded-3xl backdrop-blur-sm;
+    background: rgba(255,255,255,.8);
+    border: 1px solid rgba(255,255,255,.6);
+    box-shadow: var(--shadow-warm);
+  }
+
+  /* ── Inputs ── */
+
+  .input {
+    @apply w-full px-4 py-3 rounded-2xl border border-stone-200 bg-white text-stone-800
+           placeholder:text-stone-400 text-sm
+           focus:outline-none focus:ring-2 focus:ring-violet-400 focus:border-transparent
+           transition-all duration-200;
+  }
+
+  .input-label {
+    @apply block text-sm font-semibold text-stone-700 mb-1.5;
+  }
+
+  .select {
+    @apply input appearance-none cursor-pointer;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    background-size: 1.25em;
+    padding-right: 2.5rem;
+  }
+
+  /* ── Badges ── */
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold;
+  }
+
+  .badge-verified   { @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200; }
+  .badge-top        { @apply badge bg-amber-50 text-amber-700 border border-amber-200; }
+  .badge-pending    { @apply badge bg-amber-50 text-amber-700 border border-amber-200; }
+  .badge-accepted   { @apply badge bg-emerald-50 text-emerald-700 border border-emerald-200; }
+  .badge-rejected   { @apply badge bg-red-50 text-red-700 border border-red-200; }
+  .badge-cancelled  { @apply badge bg-stone-100 text-stone-600 border border-stone-200; }
+  .badge-completed  { @apply badge bg-violet-50 text-violet-700 border border-violet-200; }
+  .badge-urgent     { @apply badge bg-red-50 text-red-700 border border-red-200; }
+  .badge-basic      { @apply badge bg-stone-100 text-stone-600; }
+  .badge-experienced { @apply badge bg-sky-50 text-sky-700; }
+  .badge-premium    { @apply badge bg-violet-50 text-violet-700; }
+
+  /* ── Nanny Card ── */
+
+  .nanny-card {
+    @apply card-hover;
+  }
+
+  .nanny-card-photo {
+    @apply relative h-56 overflow-hidden;
+    background: linear-gradient(135deg, #ede9fe, var(--cream-card));
+  }
+
+  /* ── Section containers ── */
+
+  .section       { @apply py-16 px-4; }
+  .section-title { @apply text-3xl font-bold text-stone-800 text-center mb-3; }
+  .section-subtitle { @apply text-stone-500 text-center text-lg mb-12; }
+  .container-app { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
+
+  /* ── Match score bar ── */
+
+  .score-bar {
+    @apply h-2 rounded-full bg-stone-100 overflow-hidden;
+  }
+
+  .score-bar-fill {
+    @apply h-full rounded-full transition-all duration-700;
+    background: linear-gradient(90deg, #a78bfa, #7c3aed);
+  }
+
+  /* ── Sidebar ── */
+
+  .sidebar { @apply bg-white border-r border-stone-100 flex flex-col; }
+
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-2xl mx-2 text-sm font-medium
+           text-stone-600 hover:bg-stone-50 hover:text-violet-700 transition-all duration-150;
+  }
+
+  .sidebar-link.active {
+    @apply font-semibold;
+    background-color: var(--brand-50);
+    color: var(--brand-600);
+  }
+
+  /* ── Skill tag ── */
+
+  .skill-tag {
+    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-medium
+           border cursor-pointer transition-all duration-150;
+    background-color: var(--brand-50);
+    color: var(--brand-600);
+    border-color: var(--brand-100);
+  }
+  .skill-tag:hover {
+    background-color: var(--brand-100);
+    border-color: var(--brand-200);
+  }
+
+  .skill-tag.selected {
+    background-color: var(--brand-600);
+    color: white;
+    border-color: var(--brand-600);
+  }
+
+  /* ── Map ── */
+
+  .map-container {
+    @apply rounded-3xl overflow-hidden border border-stone-200;
+    box-shadow: var(--shadow-warm);
+  }
+
+  /* ── Step ── */
+
+  .step { @apply flex flex-col items-center gap-3 text-center; }
+
+  /* ── Stars ── */
+
+  .stars { @apply flex items-center gap-0.5; }
+}
+
+/* ── Utilities ─────────────────────────────────────────────────────────── */
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+
+  .bg-gradient-brand {
+    background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  }
+
+  .bg-gradient-hero {
+    background: linear-gradient(135deg, #fdf4e7 0%, #f5f3ff 40%, #eff6ff 100%);
+  }
+
+  .shadow-brand {
+    box-shadow: var(--shadow-brand);
+  }
+
+  /* Leaflet overrides */
+  .leaflet-container {
+    font-family: 'Inter', system-ui, sans-serif;
+    border-radius: 1.5rem;
+  }
+
+  .leaflet-popup-content-wrapper {
+    border-radius: 1rem !important;
+    box-shadow: var(--shadow-warm) !important;
+    border: none !important;
+    padding: 0 !important;
+  }
+
+  .leaflet-popup-content {
+    margin: 0 !important;
+  }
+
+  /* Scroll */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+}
+
+/* ── Animations ─────────────────────────────────────────────────────────── */
+
+@keyframes fadeIn  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes float   { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+
+.animate-fade-in  { animation: fadeIn 0.4s ease-out; }
+.animate-slide-up { animation: slideUp 0.4s ease-out; }
+.animate-float    { animation: float 3s ease-in-out infinite; }

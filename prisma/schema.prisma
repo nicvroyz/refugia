@@ -1,0 +1,435 @@
+// NannyConnect v2 — Prisma Schema
+// SQLite dev | PostgreSQL prod (switch provider + restore @db.Decimal/@db.Date)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String
+  name          String
+  role          String    @default("FAMILY")   // ADMIN | FAMILY | NANNY
+  status        String    @default("ACTIVE")   // ACTIVE | BLOCKED | PENDING_REVIEW
+  image         String?
+
+  // Relations
+  familyProfile    FamilyProfile?
+  nannyProfile     NannyProfile?
+  familyConversations Conversation[] @relation("FamilyConversations")
+  bookingsAsFamily BookingRequest[] @relation("FamilyBookings")
+  reviewsGiven     Review[]         @relation("ReviewsGiven")
+  reviewsReceived  Review[]         @relation("ReviewsReceived")
+  favoriteNannies  FavoriteNanny[]  @relation("FamilyFavorites")
+  subscription     UserSubscription?
+
+  // Audit
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("users")
+}
+
+// ─── Family Profile ───────────────────────────────────────────────────────────
+
+model FamilyProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  childrenCount Int     @default(1)
+  childrenAges  String? // "3, 6"
+  commune       String?
+  address       String?
+  preferences   String?
+  phone         String?
+
+  // Location (approximate, anonymized before display)
+  lat Float?
+  lng Float?
+
+  // UX
+  favoriteNannies String? // JSON: ["nannyProfileId1", ...] — kept for backward compat
+
+  // Stats (denormalized)
+  totalHoras         Float @default(0)
+  historialServicios Int   @default(0)
+
+  // Child profiles (persistent, reusable across requests)
+  children ChildProfile[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("family_profiles")
+}
+
+// ─── Child Profile ("Cuéntanos sobre los niños") ──────────────────────────────
+
+model ChildProfile {
+  id              String        @id @default(cuid())
+  familyProfileId String
+  familyProfile   FamilyProfile @relation(fields: [familyProfileId], references: [id], onDelete: Cascade)
+
+  name                String? // optional — some families prefer not to share names
+  age                 Int     // required — used for nanny experience matching
+
+  // Temperament: JSON array of one or more — ["tranquilo"|"activo"|"timido"|"sociable"]
+  temperament         String?
+
+  // Routines: JSON array — ["duerme_siesta"|"horario_fijo"|"rutina_especifica"]
+  routines            String?
+
+  // Support needs: JSON array — friendly, not clinical
+  // ["mayor_atencion"|"apoyo_escolar"|"acompanamiento_constante"|"paciencia_extra"]
+  supportNeeds        String?
+
+  // Conditions: JSON array — optional, never required
+  // ["TEA"|"TDAH"|"discapacidad_fisica"|"discapacidad_cognitiva"|"otro"]
+  conditions          String?
+
+  allergies           String? // free text
+  specialInstructions String? // free text — "hay algo que deba saber la niñera?"
+  notes               String? // general notes
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("child_profiles")
+}
+
+// ─── Nanny Profile ────────────────────────────────────────────────────────────
+
+model NannyProfile {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Basic info
+  bio             String?
+  experienceYears Int     @default(0)
+  commune         String?
+  photoUrl        String?
+  languages       String? @default("Español")
+
+  // Location (approximate)
+  lat              Float?
+  lng              Float?
+  coverageRadiusKm Float  @default(5)
+
+  // Skills & certifications (stored as JSON arrays)
+  skills         String? // JSON: ["primeros_auxilios","música","inglés"]
+  certifications String? // JSON: ["RCP","Educadora de Párvulos"]
+
+  // Pricing
+  hourlyRate        Float  @default(3000)
+  hourlyRatePremium Float? // nocturno / urgencia / múltiples niños
+
+  // Trust & level
+  level       String @default("BASIC")          // BASIC | EXPERIENCED | PREMIUM
+  trustStatus String @default("PENDING_REVIEW") // PENDING_REVIEW | VERIFIED | TOP_NANNY
+  badgeSource String @default("AUTO")           // AUTO | MANUAL
+  isApproved  Boolean @default(false)
+  isAvailable Boolean @default(true)
+
+  // Identity & verification checklist
+  identityVerified        Boolean @default(false)
+  backgroundCheck         Boolean @default(false)
+  certificationsVerified  Boolean @default(false)
+  experienceVerified      Boolean @default(false)
+  verificationNotes       String?
+
+  // Reputation (denormalized for perf)
+  rating                Float @default(0)
+  totalReviews          Int   @default(0)
+
+  // Performance stats (denormalized)
+  totalHorasTrabajadas  Float @default(0)
+  totalServicios        Int   @default(0)
+
+  // Response & Social Proof
+  avgResponseTimeMins   Int?
+  acceptanceRate        Float?  @default(1.0)
+  totalFamiliesWorked   Int     @default(0)
+  totalRebookings       Int     @default(0)
+
+  // Relations
+  favorites    FavoriteNanny[]
+
+  // Relations
+  availability NannyAvailability[]
+  blocks       NannyBlock[]
+  bookings     BookingRequest[]
+  conversations Conversation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("nanny_profiles")
+}
+
+// ─── Nanny Availability ───────────────────────────────────────────────────────
+
+model NannyAvailability {
+  id             String       @id @default(cuid())
+  nannyProfileId String
+  nannyProfile   NannyProfile @relation(fields: [nannyProfileId], references: [id], onDelete: Cascade)
+
+  dayOfWeek String // MONDAY..SUNDAY
+  startTime String // "08:00"
+  endTime   String // "18:00"
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([nannyProfileId, dayOfWeek])
+  @@map("nanny_availability")
+}
+
+// ─── Nanny Block (manual calendar blocks) ────────────────────────────────────
+
+model NannyBlock {
+  id             String       @id @default(cuid())
+  nannyProfileId String
+  nannyProfile   NannyProfile @relation(fields: [nannyProfileId], references: [id], onDelete: Cascade)
+
+  date      DateTime
+  startTime String    // "09:00"
+  endTime   String    // "12:00"
+  reason    String?   // "Cita médica", "Vacaciones", etc.
+
+  createdAt DateTime @default(now())
+
+  @@map("nanny_blocks")
+}
+
+// ─── Booking Request ─────────────────────────────────────────────────────────
+
+model BookingRequest {
+  id             String       @id @default(cuid())
+  familyId       String
+  family         User         @relation("FamilyBookings", fields: [familyId], references: [id])
+  nannyProfileId String
+  nannyProfile   NannyProfile @relation(fields: [nannyProfileId], references: [id])
+
+  // Schedule
+  date      DateTime
+  startTime String   // "09:00"
+  endTime   String   // "17:00"
+
+  // Service details
+  address       String
+  lat           Float?   // service location (approximate)
+  lng           Float?
+  comment       String?
+  serviceType   String   @default("OCCASIONAL") // OCCASIONAL | RECURRENT | OVERNIGHT | EMERGENCY
+  childrenCount Int      @default(1)
+  childrenAges  String?  // "3, 6"
+  requiredSkills String? // JSON: ["primeros_auxilios"]
+  isUrgent      Boolean  @default(false)
+
+  // Recurrence
+  isRecurrent      Boolean @default(false)
+  recurrenceDays   String? // JSON: ["MONDAY","WEDNESDAY"] — días de la semana
+  recurringGroupId String? // links instances of the same recurring series
+
+  // Pricing
+  finalRate   Float?
+  totalAmount Float?
+
+  // Priority & cancellation
+  priorityLevel String    @default("NORMAL") // NORMAL | URGENT
+  cancelledAt   DateTime?
+  cancelReason  String?
+
+  // Status
+  status String @default("REQUESTED") // REQUESTED | IN_CHAT | ACCEPTED | PENDING_PAYMENT | CONFIRMED | COMPLETED | CANCELLED | CANCELLED_LATE | NO_SHOW
+
+  // Relations
+  review Review?
+  conversation Conversation?
+  payment Payment?
+
+  // Audit
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("booking_requests")
+}
+
+// ─── Payment ─────────────────────────────────────────────────────────────────
+
+model Payment {
+  id             String         @id @default(cuid())
+  bookingId      String         @unique
+  booking        BookingRequest @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  amount         Float          // Total paid by the family
+  fee            Float          // Platform commission
+  nannyEarnings  Float          // amount - fee
+  
+  flowOrder      String?        @unique // Flow transaction ID
+  status         String         @default("PENDING") // PENDING | SUCCESS | FAILED | REFUNDED
+  
+  // Nanny Payout status
+  payoutStatus   String         @default("PENDING") // PENDING | PAID
+  payoutDate     DateTime?
+  
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@map("payments")
+}
+
+// ─── Review ───────────────────────────────────────────────────────────────────
+
+model Review {
+  id        String         @id @default(cuid())
+  bookingId String         @unique
+  booking   BookingRequest @relation(fields: [bookingId], references: [id])
+
+  fromUserId String
+  fromUser   User   @relation("ReviewsGiven", fields: [fromUserId], references: [id])
+  toUserId   String
+  toUser     User   @relation("ReviewsReceived", fields: [toUserId], references: [id])
+
+  // Rating (overall + subcategories)
+  rating      Int
+  punctuality Int?    // 1-5
+  kindness    Int?    // 1-5  (trato general)
+  reliability Int?    // 1-5
+  childCare   Int?    // 1-5  (cuidado de niños específicamente)
+  comment     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reviews")
+}
+
+
+
+// ─── Favorite Nanny (proper relation, replaces JSON) ─────────────────────────
+
+model FavoriteNanny {
+  id             String       @id @default(cuid())
+  familyId       String
+  family         User         @relation("FamilyFavorites", fields: [familyId], references: [id], onDelete: Cascade)
+  nannyProfileId String
+  nannyProfile   NannyProfile @relation(fields: [nannyProfileId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([familyId, nannyProfileId])
+  @@map("favorite_nannies")
+}
+
+// ─── Subscription Plan ────────────────────────────────────────────────────────
+
+model SubscriptionPlan {
+  id                 String  @id @default(cuid())
+  name               String  @unique  // FREE | BASIC | PREMIUM
+  priceMonthly       Float   @default(0)
+  priorityMatching   Boolean @default(false)
+  boostVisibilidad   Boolean @default(false)
+  maxBookingsPerMonth Int    @default(999)
+  description        String?
+
+  subscriptions UserSubscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("subscription_plans")
+}
+
+// ─── User Subscription ────────────────────────────────────────────────────────
+
+model UserSubscription {
+  id       String @id @default(cuid())
+  userId   String @unique
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  planId   String
+  plan     SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  status    String   @default("ACTIVE")  // ACTIVE | CANCELLED | EXPIRED
+  startsAt  DateTime @default(now())
+  expiresAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_subscriptions")
+}
+
+// ─── Commission Log ───────────────────────────────────────────────────────────
+
+model CommissionLog {
+  id        String  @id @default(cuid())
+  bookingId String  @unique
+  amount    Float   // commission amount
+  rate      Float   // e.g. 0.10 = 10%
+  status    String  @default("PENDING")  // PENDING | PAID | WAIVED
+
+  createdAt DateTime @default(now())
+
+  @@map("commission_logs")
+}
+
+// ─── Messaging (Contextual Airbnb-style) ──────────────────────────────────────
+
+model Conversation {
+  id               String         @id @default(cuid())
+  bookingId        String         @unique // Context is mandatory
+  booking          BookingRequest @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  
+  familyId         String
+  family           User           @relation("FamilyConversations", fields: [familyId], references: [id], onDelete: Cascade)
+  
+  nannyProfileId   String
+  nannyProfile     NannyProfile   @relation(fields: [nannyProfileId], references: [id], onDelete: Cascade)
+
+  status           String         @default("OPEN") // OPEN | ARCHIVED
+  messages         Message[]
+
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  senderId       String       // User ID or "SYSTEM"
+  content        String
+  messageType    String       @default("TEXT") // TEXT | SYSTEM
+  readAt         DateTime?
+
+  createdAt      DateTime     @default(now())
+
+  @@map("messages")
+}
+
+// ─── System Configuration ─────────────────────────────────────────────────────
+
+model SystemConfig {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@map("system_config")
+}
