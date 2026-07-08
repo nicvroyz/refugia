@@ -1,70 +1,64 @@
 <div align="center">
   <h1>🏠 Refugia</h1>
-  <p><strong>Conectamos familias con niñeras de confianza.</strong></p>
-  <p>Una plataforma moderna, segura y orientada a la tranquilidad del hogar.</p>
+  <p><strong>Plataforma integral de conexión entre familias y cuidadoras infantiles.</strong></p>
 </div>
 
 ---
 
-## 📖 Sobre Refugia
+## 🏗️ Arquitectura y Stack Tecnológico
 
-**Refugia** es una plataforma web integral diseñada para resolver la necesidad de encontrar cuidado infantil seguro y confiable. Permite a las familias descubrir niñeras cercanas, revisar sus certificaciones, reservar horarios específicos y realizar pagos de forma completamente digital y automatizada.
+Refugia está construida sobre un stack moderno y escalable enfocado en el rendimiento y la seguridad del lado del servidor.
 
-El sistema cuenta con tres portales principales diseñados para ofrecer una experiencia fluida a cada tipo de usuario:
-- 👨‍👩‍👧 **Panel de Familias**
-- 👩‍🍼 **Panel de Niñeras**
-- 🛡️ **Panel de Administración**
-
----
-
-## 🎨 Diseño y UI/UX
-
-Refugia fue diseñada bajo los principios de **Modernidad, Confianza y Calidez**, lo cual se refleja en su interfaz de usuario.
-
-### Estética y Colores (Design System)
-- **Brand (Warm Lavender / Violet)**: El color primario de la marca (`#7c3aed`). Transmite profesionalismo pero con un toque moderno y acogedor. Utilizado en botones primarios, enlaces y acentos visuales.
-- **Fondos (Warm Cream)**: En lugar de blancos puros y grises fríos, la app utiliza fondos color crema (`#fffbf5`) que hacen que la interfaz se sienta mucho más cálida y humana.
-- **Trust Green**: Un verde esmeralda (`#059669`) utilizado exclusivamente para elementos de confianza como insignias de "Verificada", checkmarks y confirmaciones de pago.
-- **Gradientes Suaves**: La aplicación hace uso extensivo de `gradient-warm` y `gradient-hero` para crear profundidad sin abrumar la vista.
-
-### Experiencia Interactiva
-- **Micro-animaciones**: Transiciones suaves en toda la plataforma (`fade-in`, `slide-up` y elementos `float` en el hero) para que la app se sienta viva y responsiva.
-- **Glassmorphism**: Efectos de desenfoque (`backdrop-blur`) en tarjetas superpuestas y modales, lo que entrega un look premium y de última generación.
-- **Tipografía**: Basada en `Inter` para máxima legibilidad, combinando pesos `font-black` para precios y `font-medium` para la lectura diaria.
+### Core Stack
+* **Next.js 16 (App Router)**: Renderizado híbrido con Server Components para SEO y tiempos de carga óptimos.
+* **Server Actions**: Mutaciones de datos directamente desde componentes sin necesidad de endpoints API REST tradicionales.
+* **Prisma ORM**: Modelado de datos declarativo y Type-Safety extremo entre la base de datos y la aplicación.
+* **PostgreSQL**: Base de datos relacional robusta (migrada desde SQLite para soporte de concurrencia en producción).
+* **JWT Authentication**: Sistema sin estado manejado por `NextAuth.js` con contraseñas hasheadas (Bcrypt, 12 rondas).
+* **Middleware Authorization**: Protección de rutas en el borde (Edge) evaluando JWTs para interceptar accesos no autorizados antes de renderizar la página.
+* **Docker & NGINX**: Contenedorización completa con reverse proxy para orquestación y despliegue rápido.
+* **Role Based Access Control (RBAC)**: Segregación estricta de dominios de usuario (`FAMILY`, `NANNY`, `ADMIN`).
 
 ---
 
-## 🚀 Tecnologías (Tech Stack)
+## 📊 Diagramas de Flujo
 
-La aplicación está construida sobre un stack moderno y escalable:
+### Flujo de Datos y Arquitectura Base
+```mermaid
+graph TD
+    A[Cliente / Navegador] -->|HTTP Request| B(Next.js App Router)
+    B -->|Server Actions| C{Prisma ORM}
+    C -->|Query SQL| D[(PostgreSQL)]
+    D -->|Data| C
+    C -->|Type-Safe Object| B
+    B -->|Server Component HTML| A
+```
 
-### Frontend
-- **Framework**: Next.js 16 (App Router)
-- **Librería de UI**: React
-- **Estilos**: Tailwind CSS (con Design System personalizado)
-- **Componentes**: Construidos desde cero (sin depender de pesadas librerías de componentes) para mantener el HTML semántico y un CSS mínimo y rápido.
-
-### Backend & Datos
-- **Base de Datos**: PostgreSQL
-- **ORM**: Prisma (para type-safety y migraciones declarativas)
-- **Autenticación**: NextAuth.js v4 (Estrategia JWT y Credenciales con contraseñas hasheadas en `bcrypt` de 12 rondas)
-
-### Integraciones Externas
-- **Pasarela de Pagos**: [Flow.cl](https://www.flow.cl/) (Webpay Plus, Servipag, Mach, etc.) a través de webhooks seguros.
-- **Emailing**: [Resend API](https://resend.com/) para el envío de notificaciones y recibos con plantillas HTML nativas.
-
-### Infraestructura
-- **Docker**: El repositorio incluye `Dockerfile` y `docker-compose.yml` listos para ser desplegados en cualquier VPS (junto con NGINX para reverse proxy).
+### Ciclo de Vida de Reservas y Pagos
+```mermaid
+graph TD
+    A[Usuario Familia] -->|Solicita| B(Creación de Reserva)
+    B -->|Espera Confirmación| C[Niñera Acepta]
+    C -->|Redirección Segura| D(Pasarela Flow.cl)
+    D -.->|Notificación Asíncrona| E(Webhook API)
+    E -->|Validación criptográfica| F{Verificar Firma Flow}
+    F -->|Éxito| G[Reserva Confirmada]
+```
 
 ---
 
-## ⚙️ Características Principales
+## 🎯 Problemas de Ingeniería Resueltos
 
-* 🔍 **Algoritmo de Matching**: Ordena a las niñeras basándose en distancia (cálculo radial), habilidades, disponibilidad de calendario y bonificaciones de confianza.
-* 💬 **Chat Integrado**: Sistema de mensajería contextual ligada a una reserva, permitiendo que la familia y la niñera conversen solo cuando la reserva ha sido pre-aprobada.
-* 📅 **Disponibilidad Semanal**: Las niñeras pueden editar su grilla de horarios disponibles, y el sistema automáticamente bloquea cruces de reservas.
-* 💳 **Pagos Seguros**: Al confirmar un servicio, la familia es redirigida a la pasarela y el sistema espera el Webhook de Flow para marcar la reserva como pagada.
-* 🔒 **Seguridad de Rutas (Middleware)**: Protección robusta en el borde (Edge) mediante `next-auth/middleware` que asegura que una familia no pueda entrar al dashboard de admin o de niñera y viceversa.
+La plataforma maneja lógicas complejas encapsuladas en un sistema coherente:
+
+* **✓ Matching Geográfico**: Algoritmo de cálculo radial basado en coordenadas anonimizadas para encontrar perfiles dentro del área de cobertura de la niñera.
+* **✓ Autenticación e Identidad**: Flujo de registro separado según rol, validando unicidad de emails y hasheo seguro.
+* **✓ Roles (RBAC)**: `middleware.ts` en la raíz del proyecto evita accesos cruzados de sesión sin cargar código innecesario.
+* **✓ Sistema de Pagos Seguro**: Integración asíncrona mediante webhooks. Soporte para fallas temporales y limpiezas programadas (cron jobs) de pagos estancados.
+* **✓ Chat Contextual**: Creación condicional de salas de mensajería (conversations) vinculadas a un ID de reserva, protegiendo la privacidad al permitir chat solo en estados confirmados.
+* **✓ Motor de Disponibilidad**: Sistema de intersección de fechas para prevenir "Double Booking" validando horarios de trabajo registrados vs bloques bloqueados manualmente o reservas previas.
+* **✓ Contenedorización con Docker**: Orquestación aislada en `docker-compose.yml`, eliminando dependencias locales para la base de datos y unificando las variables de entorno.
+* **✓ Transacciones por Emails**: Notificaciones HTML asíncronas vía API (Resend) para eventos clave del ciclo de vida del usuario sin bloquear el renderizado del request HTTP principal.
 
 ---
 
@@ -76,45 +70,36 @@ La aplicación está construida sobre un stack moderno y escalable:
    cd nannyconnect
    ```
 
-2. **Instalar dependencias**
-   ```bash
-   npm install
-   ```
-
-3. **Configurar Variables de Entorno**
+2. **Variables de Entorno**
    ```bash
    cp .env.example .env
    ```
-   Edita el `.env` con tus credenciales de PostgreSQL, Flow y Resend.
+   *Configura `DATABASE_URL` (Postgres), tu `NEXTAUTH_SECRET`, y claves API.*
 
-4. **Sincronizar la Base de Datos**
+3. **Base de Datos (Prisma)**
    ```bash
+   npm install
    npx prisma generate
    npx prisma db push
    ```
 
-5. **Correr el servidor**
+4. **Levantar el Servidor**
    ```bash
    npm run dev
    ```
 
-## 📦 Despliegue (VPS / Producción)
+## 📦 Deploy (Producción VPS)
 
-Refugia está diseñada para correr de manera contenida.
+Despliegue configurado para `docker-compose`. Levanta la DB de PostgreSQL, la aplicación Next.js compilada y NGINX como reverse proxy.
 
 ```bash
-# Dentro del servidor VPS
-git clone https://github.com/nicvroyz/nannyconnect.git
-cd nannyconnect
-cp .env.example .env # (No olvides configurarlo)
-
-# Levantar infraestructura
+# 1. Configurar .env con credenciales de producción
+# 2. Levantar los contenedores
 docker-compose up -d --build
 
-# Aplicar base de datos
+# 3. Aplicar migraciones en contenedor productivo
 docker exec -it nannyconnect_app npx prisma migrate deploy
 ```
 
-## 📄 Licencia
-
-Propiedad intelectual privada. Todos los derechos reservados.
+---
+> *Desarrollado para resolver la conectividad de cuidados infantiles bajo estrictos estándares de ingeniería de software.*
